@@ -25,7 +25,9 @@ gradSchemes
     default         Gauss linear;
 }
 
-defaultAdvScheme filteredLinear2 0.5 0.5; //vanLeer;
+//defaultAdvScheme filteredLinear2 0.5 0.5; //vanLeer;
+
+defaultAdvScheme Minmod;
 
 divSchemes
 {
