@@ -29,9 +29,7 @@ boundaryField
     }
     outlet
     {
-        type            pressureInletOutletVelocity;
-        phi             phi;
-        value           $internalField;
+        type            zeroGradient;
     }
     walls
     {
