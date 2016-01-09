@@ -1,0 +1,85 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.4.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    "Y.*"
+    {
+        solver                  PBiCG;
+        tolerance               1e-8;
+        relTol                  0.0;
+        preconditioner          DILU;
+        
+        nLimiterIter		3;
+    }
+
+    "(rho|rhoFinal)"
+    {
+        solver          diagonal;
+    }
+
+    "(U|k|epsilon)"
+    {
+        solver                  PBiCG;
+        tolerance               1e-8;
+        relTol                  0.0;
+        preconditioner          DILU;
+    }
+
+    "(U|k|epsilon)Final"
+    {
+        $U;
+        relTol          0;
+    }
+
+    "(h|hFinal)"
+    {
+        solver               PBiCG;
+        preconditioner  DILU;
+        tolerance        1e-8;
+        relTol           0;
+    };
+
+    p
+    {
+        solver               PBiCG;
+        preconditioner  DILU;
+        tolerance        1e-8;
+        relTol           0;
+    }
+
+    pFinal
+    {
+	$p;
+    }
+}
+
+PIMPLE
+{
+    momentumPredictor       true;
+
+    nOuterCorrectors        1;
+    nCorrectors             2;
+
+    nNonOrthogonalCorrectors 1;
+    
+    nonOrthogonalityThreshold	45.0;
+    skewnessThreshold		2.0;
+}
+
+
+// ************************************************************************* //
