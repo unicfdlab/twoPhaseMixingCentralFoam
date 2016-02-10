@@ -1,36 +1,40 @@
 
-YbarLiq = YLiq * rhoGas / rhoLiq / (1.0 - YLiq + (rhoGas / rhoLiq) * YLiq);
+if (pimple.corrPISO() > 1)
+{
+    thermo.correct();
+}
 
-Info << "max/min YbarLiq " << max(YbarLiq).value() << "/" << min(YbarLiq).value() << endl;
+volScalarField rhoT = thermo.rho();
+rhoHat = rhoT - psi*p;
 
-YbarLiq = min(max(YbarLiq,0.0),1.0);
-YbarGas = 1.0 - YbarLiq;
-//psi = YbarLiq * psiLiq + YbarGas * psiGas * (1.0 + YLiq * (rhoLiq0 / rhoLiq) / (1.0 - YLiq + YLiq * rhoGas / rhoLiq));
-//alphaSqrRhoLiq0 = YbarLiq*YbarLiq*rhoLiq0;
-psi = YbarLiq * psiLiq + YbarGas * psiGas  + (YbarGas * psiGas) * YLiq * (rhoLiq0 / rhoLiq) / (1.0 - YLiq + YLiq * rhoGas / rhoLiq);
-alphaSqrRhoLiq0 = YbarLiq*YbarLiq*rhoLiq0;
-
-const volScalarField p0 (p);
+rho_pos = fvc::interpolate(rhoT, pos, "reconstruct(rho)");
+rho_neg = fvc::interpolate(rhoT, neg, "reconstruct(rho)");
 
 volVectorField HbyA ("HbyA", U);
 volScalarField rAU ("rAU", 1.0 / UEqn.A());
+
+#warning "Z-component removed manually"
+
 HbyA = UEqn.H() * rAU;
+
+forAll(HbyA, iCell)
+{
+    HbyA[iCell].z() = 0.0;
+}
 
 psi_pos = fvc::interpolate(psi, pos, "reconstruct(psi)");
 psi_neg = fvc::interpolate(psi, neg, "reconstruct(psi)");
 
-alphaSqrRhoLiq0_pos = fvc::interpolate(alphaSqrRhoLiq0, pos, "reconstruct(psi)");
-alphaSqrRhoLiq0_neg = fvc::interpolate(alphaSqrRhoLiq0, neg, "reconstruct(psi)");
+rhoHat_pos = fvc::interpolate(rhoHat, pos, "reconstruct(rhoHat)");
+rhoHat_neg = fvc::interpolate(rhoHat, neg, "reconstruct(rhoHat)");
 
-psiU_pos= fvc::interpolate(psi*HbyA, pos, "reconstruct(U)");
-psiU_neg= fvc::interpolate(psi*HbyA, neg, "reconstruct(U)");
+rhoU_pos= fvc::interpolate(rhoT*HbyA, pos, "reconstruct(U)");
+rhoU_neg= fvc::interpolate(rhoT*HbyA, neg, "reconstruct(U)");
 
-phiv_pos= (psiU_pos / psi_pos) & mesh.Sf();
-phiv_neg= (psiU_neg / psi_neg) & mesh.Sf();
+phiv_pos= (rhoU_pos / rho_pos) & mesh.Sf();
+phiv_neg= (rhoU_neg / rho_neg) & mesh.Sf();
 
 c = sqrt(thermo.Cp()/thermo.Cv() / psi);
-
-//c = sqrt(1.0 / psi);
 
 cSf_pos = fvc::interpolate(c, pos, "reconstruct(psi)")*mesh.magSf();
 cSf_neg = fvc::interpolate(c, neg, "reconstruct(psi)")*mesh.magSf();
@@ -49,16 +53,19 @@ aphiv_neg = phiv_neg + aSf;
 phid_pos = aphiv_pos * psi_pos;
 phid_neg = aphiv_neg * psi_neg;
 
-surfaceScalarField phiAlphaSqrRhoLiq0_pos
+//rhoHat_pos = rho_pos - p_pos * psi_pos;
+//rhoHat_neg = rho_neg - p_neg * psi_neg;
+
+surfaceScalarField phiRhoHat_pos
 (
-    "phiAlphaSqrRhoLiq0_pos",
-    aphiv_pos*alphaSqrRhoLiq0_pos
+    "phiRhoHat_pos",
+    aphiv_pos * rhoHat_pos
 );
 
-surfaceScalarField phiAlphaSqrRhoLiq0_neg
+surfaceScalarField phiRhoHat_neg
 (
-    "phiAlphaSqrRhoLiq0_neg",
-    aphiv_neg*alphaSqrRhoLiq0_neg
+    "phiRhoHat_neg",
+    aphiv_neg * rhoHat_neg
 );
 
 surfaceScalarField Dp_pos
@@ -77,21 +84,19 @@ while (pimple.correctNonOrthogonal())
 {
     fvScalarMatrix pEqn_pos
     (
-	fvm::div(phid_pos,p) + fvc::div(phiAlphaSqrRhoLiq0_pos) - fvm::laplacian(Dp_pos*a_pos,p)
-//	fvm::div(phid_pos,p) + fvc::div(phiAlphaSqrRhoLiq0_pos) - fvm::laplacian(rho*rAU,p)
+	fvm::div(phid_pos,p) + fvc::div(phiRhoHat_pos) - fvm::laplacian(Dp_pos*a_pos,p)
     );
     
     fvScalarMatrix pEqn_neg
     (
-	fvm::div(phid_neg,p) + fvc::div(phiAlphaSqrRhoLiq0_neg) - fvm::laplacian(Dp_neg*a_neg,p)
-	//fvm::div(phid_neg,p) + fvc::div(phiAlphaSqrRhoLiq0_neg)
+	fvm::div(phid_neg,p) + fvc::div(phiRhoHat_neg) - fvm::laplacian(Dp_neg*a_neg,p)
     );
     
     fvScalarMatrix pEqn
     (
 	fvm::ddt(psi,p)
 	+
-	fvc::ddt(alphaSqrRhoLiq0)
+	fvc::ddt(rhoHat)
 	+
 	pEqn_pos
 	+
@@ -102,8 +107,8 @@ while (pimple.correctNonOrthogonal())
     
     if (pimple.finalNonOrthogonalIter())
     {
-	phiPos = pEqn_pos.flux() + phiAlphaSqrRhoLiq0_pos;
-	phiNeg = pEqn_neg.flux() + phiAlphaSqrRhoLiq0_neg;
+	phiPos = pEqn_pos.flux() + phiRhoHat_pos;
+	phiNeg = pEqn_neg.flux() + phiRhoHat_neg;
 	phi = phiPos + phiNeg;
     }
 }
@@ -114,23 +119,23 @@ p_neg = fvc::interpolate(p, neg, "reconstruct(p)");
 gradp = fvc::div((a_pos*p_pos + a_neg*p_neg)*mesh.Sf());
 
 #include "limitPressureGradient.H"
+
+forAll(gradp, iCell)
+{
+    gradp[iCell].z() = 0.0;
+}
+
 U = HbyA - rAU * gradp;
 U.correctBoundaryConditions();
 
 K = 0.5*magSqr(U);
-    
-// Update EOS
-rhoLiq += psiLiq * (p - p0);
-rhoGas += psiGas * (p - p0);
 
 Info << "max(mag(U)): " << max(mag(U)).value() << endl;
+Info << "max/min p: " << max(p).value() << "/" << min(p).value() << endl;
 
-solve
-(
-    fvm::ddt(rho) + fvc::div(phi)
-);
+#include "rhoEqn.H"
 
-volScalarField rhoT = 1.0 / (YLiq / rhoLiq + YGas / rhoGas);
+rhoT = rhoHat + psi*p; //1.0 / (YLiq / rhoLiq + YGas / rhoGas);
 
 #include "compressibleContinuityErrs.H"
 

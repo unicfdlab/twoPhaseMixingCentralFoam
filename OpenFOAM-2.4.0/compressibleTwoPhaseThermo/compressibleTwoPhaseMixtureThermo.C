@@ -66,7 +66,7 @@ Foam::compressibleTwoPhaseMixtureThermo::compressibleTwoPhaseMixtureThermo
     const fvMesh& mesh
 )
 :
-    psiThermo(mesh, word::null),
+    rhoThermo(mesh, word::null),
     compressibleTwoPhaseMixture(mesh, *this),
     thermoLiq_(NULL),
     thermoGas_(NULL),
@@ -118,27 +118,30 @@ void Foam::compressibleTwoPhaseMixtureThermo::correct()
 {
     //update temperature and heat capacities of liquid and gas
     
-    const scalar eepsilon = 1.0e-5;
+    const scalar epsilonH = 1.0e-5;
+    
     forAll(T_, celli)
     {
-	scalar CpLiq = thermoLiq_->Cp(p_[celli], T_[celli]);
-	scalar CpGas = thermoGas_->Cp(p_[celli], T_[celli]);
-	scalar Cpm =  CpLiq * YLiq()[celli] + CpGas * YGas()[celli];
-	
-	scalar F = (Cpm * T_[celli] - he_[celli]) * (Cpm * T_[celli] - he_[celli]);
-	scalar dFdT = 2.0 * Cpm * (Cpm * T_[celli] - he_[celli]);
-	
-	while (F >= eepsilon)
-	{
-	    T_[celli] = T_[celli] - F / dFdT;
-
-	    CpLiq = thermoLiq_->Cp(p_[celli], T_[celli]);
-	    CpGas = thermoGas_->Cp(p_[celli], T_[celli]);
-	    Cpm =  CpLiq * YLiq()[celli] + CpGas * YGas()[celli];
-	    
-	    F = (Cpm * T_[celli] - he_[celli]) * (Cpm * T_[celli] - he_[celli]);
-	    dFdT = 2.0 * Cpm * (Cpm * T_[celli] - he_[celli]);
-	}
+        scalar CpLiq = thermoLiq_->Cp(p_[celli], T_[celli]);
+        scalar CpGas = thermoGas_->Cp(p_[celli], T_[celli]);
+        scalar Cpm =  CpLiq * YLiq()[celli] + CpGas * YGas()[celli];
+        
+        scalar deltaH = Cpm * T_[celli] - he_[celli];
+        scalar F = deltaH * deltaH;
+        scalar dFdT = 2.0 * Cpm * deltaH;
+        
+        while (mag(deltaH) >= epsilonH)
+        {
+            T_[celli] = T_[celli] - F / dFdT;
+            
+            CpLiq = thermoLiq_->Cp(p_[celli], T_[celli]);
+            CpGas = thermoGas_->Cp(p_[celli], T_[celli]);
+            Cpm =  CpLiq * YLiq()[celli] + CpGas * YGas()[celli];
+            
+            deltaH = Cpm * T_[celli] - he_[celli];
+            F = deltaH * deltaH;
+            dFdT = 2.0 * Cpm * deltaH;
+        }
     }
     
     forAll(T_.boundaryField(), patchi)
@@ -159,10 +162,11 @@ void Foam::compressibleTwoPhaseMixtureThermo::correct()
 		scalar CpLiq = thermoLiq_->Cp(pp[facei], pT[facei]);
 		scalar CpGas = thermoGas_->Cp(pp[facei], pT[facei]);
 		scalar Cpm =  CpLiq * YLiq().boundaryField()[patchi][facei] + CpGas * YGas().boundaryField()[patchi][facei];
-	    
-		scalar F = (Cpm * pT[facei] - hep[facei]) * (Cpm * pT[facei] - hep[facei]);
-		scalar dFdT = 2.0 * Cpm * (Cpm * pT[facei] - hep[facei]);
-		while (F >= eepsilon)
+                
+                scalar deltaH = Cpm * pT[facei] - hep[facei];
+		scalar F = deltaH * deltaH;
+		scalar dFdT = 2.0 * Cpm * deltaH;
+		while (mag(deltaH) >= epsilonH)
 		{
 		    pT[facei] = pT[facei] - F / dFdT;
 		    
@@ -170,8 +174,9 @@ void Foam::compressibleTwoPhaseMixtureThermo::correct()
 		    CpGas = thermoGas_->Cp(pp[facei], pT[facei]);
 		    Cpm =  CpLiq * YLiq().boundaryField()[patchi][facei] + CpGas * YGas().boundaryField()[patchi][facei];
 		    
-		    F = (Cpm * pT[facei] - hep[facei]) * (Cpm * pT[facei] - hep[facei]);
-		    dFdT = 2.0 * Cpm * (Cpm * pT[facei] - hep[facei]);
+		    deltaH = Cpm * pT[facei] - hep[facei];
+		    F = deltaH * deltaH;
+		    dFdT = 2.0 * Cpm * deltaH;
 		}
 	    }
 	}
@@ -190,7 +195,21 @@ void Foam::compressibleTwoPhaseMixtureThermo::correct()
     
     updateVolFrac(thermoLiq_->rho(), thermoGas_->rho());
     
-    psi_ = YbarLiq()*thermoLiq_->psi() + YbarGas()*thermoGas_->psi();
+    const volScalarField& rhoGas = thermoGas_->rho();
+    const volScalarField& rhoLiq = thermoLiq_->rho();
+    const volScalarField& psiGas = thermoGas_->psi();
+    const volScalarField& psiLiq = thermoLiq_->psi();
+    
+    volScalarField YLiqByRhoLiq = YLiq() / rhoLiq;
+    volScalarField YGasByRhoGas = YGas() / rhoGas;
+    
+    psi_ = 
+        -Foam::pow(YLiqByRhoLiq + YGasByRhoGas,-2.0)*
+        (
+            - (YLiqByRhoLiq / rhoLiq) * psiLiq
+            - (YGasByRhoGas / rhoGas) * psiGas
+        );
+    
     mu_ = YbarLiq()*thermoLiq_->mu() + YbarGas()*thermoGas_->mu();
     alpha_ = YbarLiq()*thermoLiq_->alpha() + YbarGas()*thermoGas_->alpha();
 }
@@ -446,6 +465,11 @@ const Foam::volScalarField& Foam::compressibleTwoPhaseMixtureThermo::mu() const
 const Foam::scalarField& Foam::compressibleTwoPhaseMixtureThermo::mu(const label patchi) const
 {
     return mu_.boundaryField()[patchi];
+}
+
+Foam::tmp<Foam::volScalarField> Foam::compressibleTwoPhaseMixtureThermo::rho() const
+{
+    return rhoEff_;
 }
 
 // ************************************************************************* //

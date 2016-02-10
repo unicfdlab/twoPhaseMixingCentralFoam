@@ -64,7 +64,7 @@ else if ( CourantType == "faceCourant" )
 	    (
 		p_pos * psi_pos * a_pos + p_neg * psi_neg * a_neg
 		+
-		alphaSqrRhoLiq0_pos*a_pos + alphaSqrRhoLiq0_neg*a_neg
+		rhoHat_pos*a_pos + rhoHat_neg*a_neg
 	    )
 	);
 	

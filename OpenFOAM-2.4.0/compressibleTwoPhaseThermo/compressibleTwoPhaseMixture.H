@@ -72,7 +72,7 @@ protected:
         volScalarField YbarGas_;
 
         //-
-        volScalarField& rhoEff_;
+        volScalarField rhoEff_;
 
 
 public:

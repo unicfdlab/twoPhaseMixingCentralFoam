@@ -31,6 +31,7 @@ License
 #include "coupledPolyPatch.H"
 #include "surfaceInterpolate.H"
 #include "fvm.H"
+#include "fvc.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -70,33 +71,77 @@ Foam::fv::schnerrSauerEvaporationSource::schnerrSauerEvaporationSource
     rhoLiqName_(coeffs_.subDict("fieldNames").lookup("liquidDensity")),
     rhoGasName_(coeffs_.subDict("fieldNames").lookup("gasDensity")),
     pSat_(coeffs_.lookup("pSat")),
-    n_(coeffs_.lookup("n")),
+    nMinus_(DataEntry<scalar>::New("nMinus", coeffs_)),
+    nPlus_(DataEntry<scalar>::New("nPlus", coeffs_)),
     dNuc_(coeffs_.lookup("dNuc")),
     Cc_(coeffs_.lookup("Cc")),
-    Cv_(coeffs_.lookup("Cv"))
+    Cv_(coeffs_.lookup("Cv")),
+    taur_(coeffs_.lookup("taur")),
+    mLiqDotMinus_
+    (
+        IOobject
+        (
+            "mLiqDotMinus",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("zeroMassSource", dimMass/dimLength/dimLength/dimLength/dimTime, 0)
+    ),
+    mLiqDotPlus_
+    (
+        IOobject
+        (
+            "mLiqDotPlus",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("zeroMassSource", dimMass/dimLength/dimLength/dimLength/dimTime, 0)
+    )
 {
     fieldNames_.setSize(1, "YbarLiquid");
     applied_.setSize(1, false);
+
+    forAll(mLiqDotMinus_.boundaryField(), iPatch)
+    {
+	forAll(mLiqDotMinus_.boundaryField()[iPatch], iFace)
+	{
+	    mLiqDotMinus_.boundaryField()[iPatch][iFace] = 0.0;
+	}
+    }
+    
+    forAll(mLiqDotPlus_.boundaryField(), iPatch)
+    {
+	forAll(mLiqDotPlus_.boundaryField()[iPatch], iFace)
+	{
+	    mLiqDotPlus_.boundaryField()[iPatch][iFace] = 0.0;
+	}
+    }
 }
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 Foam::dimensionedScalar
-Foam::fv::schnerrSauerEvaporationSource::alphaNuc() const
+Foam::fv::schnerrSauerEvaporationSource::alphaNuc(const dimensionedScalar& nNuc) const
 {
-    dimensionedScalar Vnuc = n_ * constant::mathematical::pi * pow3 (dNuc_) / 6;
+    dimensionedScalar Vnuc = nNuc * constant::mathematical::pi * pow3 (dNuc_) / 6;
     return Vnuc / (1.0 + Vnuc);
 }
 
 Foam::tmp<Foam::volScalarField>
-Foam::fv::schnerrSauerEvaporationSource::rRb(const volScalarField& limitedAlphaLiq)
+Foam::fv::schnerrSauerEvaporationSource::rRb(const volScalarField& limitedAlphaLiq, const dimensionedScalar& nNuc)
 {
     return pow
     (
-	((4 * constant::mathematical::pi * n_ ) / 3)
+	((4 * constant::mathematical::pi * nNuc ) / 3)
 	*
-	limitedAlphaLiq / (1.0 + alphaNuc() - limitedAlphaLiq),
+	limitedAlphaLiq / (1.0 + alphaNuc(nNuc) - limitedAlphaLiq),
 	1.0 / 3.0
     );
 }
@@ -106,24 +151,20 @@ bool Foam::fv::schnerrSauerEvaporationSource::alwaysApply() const
     return true;
 }
 
-
 void Foam::fv::schnerrSauerEvaporationSource::addSup
 (
+    const volScalarField& rhoMixture,
     fvMatrix<scalar>& eqn,
-    const label
+    const label fieldI
 )
 {
-    if (eqn.psi().name() != YLiquidName_)
-    {
-        return;
-        #warning "raise exception here!"
-    }
-    
     const volScalarField& alphaLiq = mesh_.lookupObject<volScalarField>(AlphaLiquidName_);
     const volScalarField& p        = mesh_.lookupObject<volScalarField>(pName_);
     const volScalarField& rho      = mesh_.lookupObject<volScalarField>(rhoName_);
     const volScalarField& rhoLiq    = mesh_.lookupObject<volScalarField>(rhoLiqName_);
     const volScalarField& rhoGas    = mesh_.lookupObject<volScalarField>(rhoGasName_);
+
+    const dimensionedScalar p0 ("p0", p.dimensions(), 0.0);
 
     const volScalarField limitedAlphaLiquid
     (
@@ -137,70 +178,78 @@ void Foam::fv::schnerrSauerEvaporationSource::addSup
 	1.0 - limitedAlphaLiquid
     );
     
-//    forAll(limitedAlphaGas, iCell)
-//    {
-//	if (limitedAlphaGas[iCell] < 1.0e-9)
-//	{
-//	    limitedAlphaGas[iCell] = 0.0;
-//	}
-//    }
+    mLiqDotMinus_.oldTime();
+    mLiqDotPlus_.oldTime();
     
-    Info << "max/min of limitedAlphaLiquid: " << max(limitedAlphaLiquid).value() << "/" << min(limitedAlphaLiquid).value() << endl;
-    Info << "max/min of limitedAlphaGas   : " << max(limitedAlphaGas).value() << "/" << min(limitedAlphaGas).value() << endl;
-
-    dimensionedScalar p0 ("p0", p.dimensions(), 0.0);
-    
-    volScalarField pCoeff
+    dimensionedScalar nMinus
     (
-	"pCoeff",
+        "nMinus",
+        dimless / dimLength / dimLength / dimLength,
+        nMinus_->value(mesh_.time().value())
+    );
+    
+    dimensionedScalar nPlus
+    (
+        "nPlus",
+        dimless / dimLength / dimLength / dimLength,
+        nPlus_->value(mesh_.time().value())
+    );
+    
+    volScalarField rhoByRbMinus
+    (
+	"rhoByRb",
 	(rhoGas * rhoLiq / rho)
-	* (3.0 * rRb(limitedAlphaLiquid))
-	* sqrt
-	(
-	    (2. / 3.)
-	    /
-	    ((mag(p - pSat_) + 0.01*pSat_) * rhoLiq)
-	)
+	* (3.0 * rRb(limitedAlphaLiquid, nMinus))
     );
-    
-    volScalarField mLiqDotPlus
-    (
-	"mLiqDotPlus",
-	Cc_ * limitedAlphaLiquid * limitedAlphaGas * pCoeff * max (p - pSat_, p0)
-    );
-    forAll(mLiqDotPlus.boundaryField(), iPatch)
-    {
-	forAll(mLiqDotPlus.boundaryField()[iPatch], iFace)
-	{
-	    mLiqDotPlus.boundaryField()[iPatch][iFace] = 0.0;
-	}
-    }
-    Info << "Condensation source: " << max(mLiqDotPlus).value() << "/" << min(mLiqDotPlus).value() << endl;
-    
-    volScalarField mLiqDotMinus
-    (
-	"mLiqDotMinus",
-	Cv_ * (rho / rhoLiq) * (limitedAlphaGas + alphaNuc()) * pCoeff * min(p - pSat_, p0)
-    );
-    forAll(mLiqDotMinus.boundaryField(), iPatch)
-    {
-	forAll(mLiqDotMinus.boundaryField()[iPatch], iFace)
-	{
-	    mLiqDotMinus.boundaryField()[iPatch][iFace] = 0.0;
-	}
-    }
 
-    Info << "Evaporation source: " << max(mLiqDotMinus).value() << "/" << min(mLiqDotMinus).value() << endl;
-    
-//    eqn +=
-//	(-mLiqDotPlus - fvm::Sp(mLiqDotMinus, eqn.psi()));
-    eqn +=
-    fvScalarMatrix
+    volScalarField rhoByRbPlus
     (
-	-fvm::Sp(mLiqDotMinus, eqn.psi())
-	==
-	mLiqDotPlus
+	"rhoByRb",
+	(rhoGas * rhoLiq / rho)
+	* (3.0 * rRb(limitedAlphaLiquid, nPlus))
     );
+
+    volScalarField pCoeffMinus
+    (
+        "pCoeff",
+        sqrt(max(pSat_ - p, p0) / rhoLiq)
+    );
+
+    volScalarField pCoeffPlus
+    (
+        "pCoeff",
+        sqrt(max(p - pSat_, p0) / rhoLiq)
+    );
+    
+    mLiqDotMinus_ = -Cv_ * (rho / rhoLiq)
+        * (limitedAlphaGas + alphaNuc(nMinus)) * pCoeffMinus * rhoByRbMinus;
+    mLiqDotPlus_  = Cc_ * limitedAlphaLiquid
+        * limitedAlphaGas * pCoeffPlus * rhoByRbPlus;
+    
+    scalar rc = min(mesh_.time().deltaTValue() / taur_.value(), 1.0);
+    
+    mLiqDotMinus_.internalField() = mLiqDotMinus_.internalField()*rc + 
+        mLiqDotMinus_.oldTime().internalField() * (1.0 - rc);
+    mLiqDotPlus_.internalField() = mLiqDotPlus_.internalField()*rc + 
+        mLiqDotPlus_.oldTime().internalField() * (1.0 - rc);
+    
+    Info<< "Evaporation source: "
+        << gMin(mLiqDotMinus_.internalField()) << endl;
+    Info<< "Condensation source: "
+        << gMax(mLiqDotPlus_.internalField()) << endl;
+    
+    eqn.diag()   += (mLiqDotMinus_.internalField() * mLiqDotMinus_.mesh().V());
+    eqn.source() += (-mLiqDotPlus_.internalField() * mLiqDotPlus_.mesh().V());
+}
+
+
+
+void Foam::fv::schnerrSauerEvaporationSource::addSup
+(
+    fvMatrix<scalar>& eqn,
+    const label
+)
+{
 }
 
 

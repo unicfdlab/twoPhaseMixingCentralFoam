@@ -39,6 +39,8 @@ Description
 #include "customMULES.H"
 #include "fvIOoptionList.H"
 #include "cellQuality.H"
+#include "fvcSmooth.H"
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,14 +54,6 @@ int main(int argc, char *argv[])
     #include "readTimeControls.H"
 
     pimpleControl pimple(mesh);
-
-    //initialize pressure and compressibility
-    YbarLiq = YLiq * rhoGas / rhoLiq / (1.0 - YLiq + (rhoGas / rhoLiq) * YLiq);
-    YbarGas = 1.0 - YbarLiq;
-    //psi = YbarLiq * psiLiq + YbarGas * psiGas * (1.0 + YLiq * (rhoLiq0 / rhoLiq) / (1.0 - YLiq + YLiq * rhoGas / rhoLiq));
-    psi = YbarLiq * psiLiq + YbarGas * psiGas  + (YbarGas * psiGas) * YLiq * (rhoLiq0 / rhoLiq) / (1.0 - YLiq + YLiq * rhoGas / rhoLiq);
-    alphaSqrRhoLiq0 = YbarLiq*YbarLiq*rhoLiq0;
-    
 
     dimensionedScalar v_zero ("v_zero", dimVolume/dimTime, 0.0);
     #include "createSurfaceFields.H"
@@ -89,9 +83,8 @@ int main(int argc, char *argv[])
         YGas.oldTime();
         YbarLiq.oldTime();
         YbarGas.oldTime();
-        alphaSqrRhoLiq0.oldTime();
+        rhoHat.oldTime();
         K.oldTime();
-        rhoLiq0.oldTime();
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
@@ -125,6 +118,11 @@ int main(int argc, char *argv[])
             // --- Pressure corrector loop
             while (pimple.correct())
             {
+                //YbarLiq = YLiq * rhoGas / rhoLiq / (1.0 - YLiq + (rhoGas / rhoLiq) * YLiq);
+                //Info << "max/min YbarLiq " << max(YbarLiq).value() << "/" << min(YbarLiq).value() << endl;
+                //YbarLiq = min(max(YbarLiq,0.0),1.0);
+                //YbarGas = 1.0 - YbarLiq;
+                //psi = YbarLiq * psiLiq + YbarGas * psiGas  + (YbarGas * psiGas) * YLiq * (rhoLiq0 / rhoLiq) / (1.0 - YLiq + YLiq * rhoGas / rhoLiq);
                 #include "pEqn.H"
             }
 

@@ -36,7 +36,7 @@ SourceFiles
 #ifndef compressibleTwoPhaseMixtureThermo_H
 #define compressibleTwoPhaseMixtureThermo_H
 
-#include "psiThermo.H"
+#include "rhoThermo.H"
 #include "simplePhasePsiThermo.H"
 #include "compressibleTwoPhaseMixture.H"
 
@@ -51,7 +51,7 @@ namespace Foam
 
 class compressibleTwoPhaseMixtureThermo
 :
-    public psiThermo,
+    public rhoThermo,
     public compressibleTwoPhaseMixture
 {
     // Private data
@@ -284,6 +284,9 @@ public:
 	    
 	    //- Dynamic viscosity of mixture for patch [kg/m/s]
 	    virtual const scalarField& mu(const label patchi) const;
+	    
+	    //- Mixture density
+	    virtual tmp<volScalarField> rho() const;
 };
 
 

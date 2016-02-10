@@ -39,8 +39,21 @@
         ),
         mesh
     );
-
-    // Prepared for compressibleTwoPhaseMixtureThermo
+    
+    Info<< "Constructing compressibleTwoPhaseMixtureThermo\n" << endl;
+    compressibleTwoPhaseMixtureThermo thermo(mesh);
+    
+    volScalarField& YLiq = thermo.YLiq();
+    volScalarField& YGas = thermo.YGas();
+    volScalarField& YbarLiq = thermo.YbarLiq();
+    volScalarField& YbarGas = thermo.YbarGas();
+    
+    Info<< "Reading thermophysical properties\n" << endl;
+    volScalarField& p = thermo.p();
+    volScalarField& T = thermo.T();
+    volScalarField& psi = const_cast<volScalarField&>(thermo.psi());
+    thermo.correct();
+    
     volScalarField rho
     (
         IOobject
@@ -51,27 +64,9 @@
             IOobject::NO_READ,
             IOobject::AUTO_WRITE
         ),
-        mesh,
-        dimDensity
+        thermo.rho()
     );
-
-    Info<< "Constructing compressibleTwoPhaseMixtureThermo\n" << endl;
-    compressibleTwoPhaseMixtureThermo thermo(mesh);
-
-    volScalarField& YLiq = thermo.YLiq();
-    volScalarField& YGas = thermo.YGas();
-    volScalarField& YbarLiq = thermo.YbarLiq();
-    volScalarField& YbarGas = thermo.YbarGas();
-
-    Info<< "Reading thermophysical properties\n" << endl;
-    volScalarField& p = thermo.p();
-    volScalarField& T = thermo.T();
-    volScalarField& rhoLiq = thermo.thermoLiq().rho();
-    volScalarField& rhoGas = thermo.thermoGas().rho();
-    const volScalarField& psiLiq = thermo.thermoLiq().psi();
-    const volScalarField& psiGas = thermo.thermoGas().psi();
-    volScalarField& psi = const_cast<volScalarField&>(thermo.psi());
-
+    
     Info<< "Calculating mass flux field phi\n" << endl;
     surfaceScalarField phi
     (
@@ -85,13 +80,13 @@
         ),
         linearInterpolate(rho * U) & mesh.Sf()
     );
-
+    
     Info<< "Creating turbulence model\n" << endl;
     autoPtr<compressible::RASModel> turbulence
     (
         compressible::RASModel::New(rho, U, phi, thermo)
     );
-
+    
     Info<< "Creating field dpdt\n" << endl;
     volScalarField dpdt
     (
@@ -165,28 +160,24 @@
 	dimensionedScalar("neg", dimless, -1.0)
     );
     
-    volScalarField& rhoLiq0 = thermo.thermoLiq().rhoZero();
-    
-    Info << "max/min rhoLiq0" << max(rhoLiq0).value() << "/" << min(rhoLiq0).value() << endl;
-    
-    volScalarField alphaSqrRhoLiq0
+    volScalarField rhoHat
     (
-	"alphaSqrRhoLiq0",
-	YLiq*YbarLiq*rhoLiq0
+	"rhoHat",
+	rho - psi*p
     );
     
-    surfaceScalarField alphaSqrRhoLiq0_pos
+    surfaceScalarField rhoHat_pos
     (
-	"alphaSqrRhoLiq0_pos",
-	fvc::interpolate(alphaSqrRhoLiq0, pos, "reconstruct(p)")
+	"rhoHat_pos",
+	fvc::interpolate(rhoHat, pos, "reconstruct(rhoHat)")
     );
     
-    surfaceScalarField alphaSqrRhoLiq0_neg
+    surfaceScalarField rhoHat_neg
     (
-	"alphaSqrRhoLiq0_neg",
-	fvc::interpolate(alphaSqrRhoLiq0, neg, "reconstruct(p)")
+	"rhoHat_neg",
+	fvc::interpolate(rhoHat, neg, "reconstruct(rhoHat)")
     );
-
+    
     Info<< "Declare and initialise the cumulative continuity error\n" << endl;
     scalar cumulativeContErr = 0;
     

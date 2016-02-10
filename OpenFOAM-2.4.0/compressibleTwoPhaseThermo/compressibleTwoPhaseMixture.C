@@ -85,10 +85,19 @@ Foam::compressibleTwoPhaseMixture::compressibleTwoPhaseMixture
         ),
         1.0 - YbarLiq_
     ),
-
+    
     rhoEff_
     (
-        const_cast<volScalarField&>(mesh.lookupObject<volScalarField>("rho"))
+        IOobject
+        (
+            "thermo:rho",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimDensity
     )
 {}
 

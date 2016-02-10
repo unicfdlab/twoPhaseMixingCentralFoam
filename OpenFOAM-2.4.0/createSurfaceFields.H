@@ -1,3 +1,14 @@
+    surfaceScalarField rho_pos
+    (
+	"rho_pos",
+	fvc::interpolate(thermo.rho(), pos, "reconstruct(rho)")
+    );
+    surfaceScalarField rho_neg
+    (
+	"psi_neg",
+	fvc::interpolate(thermo.rho(), neg, "reconstruct(rho)")
+    );
+
     surfaceScalarField psi_pos
     (
 	"psi_pos",
@@ -9,26 +20,15 @@
 	fvc::interpolate(psi, neg, "reconstruct(psi)")
     );
 
-    surfaceScalarField YbarLiq_pos
+    surfaceVectorField rhoU_pos
     (
-	"YbarLiq_pos",
-	fvc::interpolate(YbarLiq, pos, "reconstruct(YbarLiq)")
+	"rhoU_pos",
+	fvc::interpolate(rho*U, pos, "reconstruct(U)")
     );
-    surfaceScalarField YbarLiq_neg
+    surfaceVectorField rhoU_neg
     (
-	"YbarLiq_neg",
-	fvc::interpolate(YbarLiq, neg, "reconstruct(YbarLiq)")
-    );
-
-    surfaceVectorField psiU_pos
-    (
-	"psiU_pos",
-	fvc::interpolate(psi*U, pos, "reconstruct(U)")
-    );
-    surfaceVectorField psiU_neg
-    (
-	"psiU_neg",
-	fvc::interpolate(psi*U, neg, "reconstruct(U)")
+	"rhoU_neg",
+	fvc::interpolate(rho*U, neg, "reconstruct(U)")
     );
 
     surfaceScalarField p_pos
@@ -45,12 +45,12 @@
     surfaceScalarField phiv_pos
     (
 	"phiv_pos",
-	(psiU_pos / psi_pos)  & mesh.Sf()
+	(rhoU_pos / rho_pos)  & mesh.Sf()
     );
     surfaceScalarField phiv_neg
     (
 	"phiv_neg",
-	(psiU_neg / psi_neg) & mesh.Sf()
+	(rhoU_neg / rho_neg) & mesh.Sf()
     );
 
     volScalarField c
@@ -68,7 +68,7 @@
 	"cSf_neg",
 	fvc::interpolate(c, neg, "reconstruct(psi)")*mesh.magSf()
     );
-
+    
     surfaceScalarField ap
     (
 	"ap",
@@ -96,13 +96,13 @@
 	"a_neg",
 	1.0 - a_pos
     );
-
+    
     phiv_pos *= a_pos;
     phiv_neg *= a_neg;
-
+    
     surfaceScalarField aphiv_pos("aphiv_pos", phiv_pos - aSf);
     surfaceScalarField aphiv_neg("aphiv_neg", phiv_neg + aSf);
-
+    
     surfaceScalarField phid_pos
     (
 	"phid_pos",
@@ -113,19 +113,19 @@
 	"phid_neg",
 	aphiv_neg * psi_neg
     );
-
+    
     surfaceScalarField phiPos
     (
 	"phiPos",
 	phi
     );
-
+    
     surfaceScalarField phiNeg
     (
 	"phiNeg",
 	phi * 0.0
     );
-
+    
     surfaceScalarField kappa
     (
 	IOobject

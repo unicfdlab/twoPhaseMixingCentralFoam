@@ -1,0 +1,109 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.4.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+ddtSchemes
+{
+    default Euler;
+}
+
+gradSchemes
+{
+    default         Gauss linear;
+}
+
+diffusiveAdvScheme upwind;
+defaultAdvScheme vanAlbada;
+
+
+divSchemes
+{
+    default		none;
+
+    div(phiNeg,Y.Liq)	Gauss $defaultAdvScheme;
+    div(phiPos,Y.Liq)	Gauss $defaultAdvScheme;
+
+    div(phiNeg,K)	Gauss $defaultAdvScheme;
+    div(phiPos,K)	Gauss $defaultAdvScheme;
+
+    div(phiNeg,h)	Gauss $defaultAdvScheme;
+    div(phiPos,h)	Gauss $defaultAdvScheme;
+
+    div(phiNeg,U)	Gauss $defaultAdvScheme;
+    div(phiPos,U)	Gauss $defaultAdvScheme;
+
+    div(phid_pos,p)	Gauss $defaultAdvScheme;
+    div(phid_neg,p)	Gauss $defaultAdvScheme;
+
+    div((muEff*dev2(T(grad(U))))) Gauss linear;
+    
+    div(phi,omega)	Gauss $defaultAdvScheme;
+    div(phi,k)		Gauss $defaultAdvScheme;
+    
+    div(rhoi*Uri,hi)    Gauss linear;
+    
+    div(gasDiffusionFlux,U) Gauss linear;
+    div(liqDiffusionFlux,U) Gauss linear;
+}
+
+laplacianSchemes
+{
+    default         Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default         none;
+
+    /*
+     *	Interpolations that are critical for KT scheme
+     */
+    
+    reconstruct(p)		$defaultAdvScheme;
+    reconstruct(YbarLiq)	$defaultAdvScheme;
+    
+//    reconstruct(U)		$diffusiveAdvScheme;
+//    reconstruct(psi)		$diffusiveAdvScheme;
+
+    reconstruct(U)		$defaultAdvScheme;
+    reconstruct(psi)		$defaultAdvScheme;
+
+    reconstruct(Dp)		$defaultAdvScheme;
+    
+    reconstruct(rhoHat)		$defaultAdvScheme;
+    reconstruct(rho)		$defaultAdvScheme;
+    
+    
+    interpolate(muEff) linear;
+    interpolate((muEff|Sc)) linear;
+    interpolate(rho) linear;
+}
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+fluxRequired
+{
+    default         no;
+    p;
+    Y.Liq;
+    h;
+}
+
+
+// ************************************************************************* //
