@@ -13,14 +13,7 @@ rho_neg = fvc::interpolate(rhoT, neg, "reconstruct(rho)");
 volVectorField HbyA ("HbyA", U);
 volScalarField rAU ("rAU", 1.0 / UEqn.A());
 
-#warning "Z-component removed manually"
-
 HbyA = UEqn.H() * rAU;
-
-forAll(HbyA, iCell)
-{
-    HbyA[iCell].z() = 0.0;
-}
 
 psi_pos = fvc::interpolate(psi, pos, "reconstruct(psi)");
 psi_neg = fvc::interpolate(psi, neg, "reconstruct(psi)");
@@ -52,9 +45,6 @@ aphiv_pos = phiv_pos - aSf;
 aphiv_neg = phiv_neg + aSf;
 phid_pos = aphiv_pos * psi_pos;
 phid_neg = aphiv_neg * psi_neg;
-
-//rhoHat_pos = rho_pos - p_pos * psi_pos;
-//rhoHat_neg = rho_neg - p_neg * psi_neg;
 
 surfaceScalarField phiRhoHat_pos
 (
@@ -119,11 +109,6 @@ p_neg = fvc::interpolate(p, neg, "reconstruct(p)");
 gradp = fvc::div((a_pos*p_pos + a_neg*p_neg)*mesh.Sf());
 
 #include "limitPressureGradient.H"
-
-forAll(gradp, iCell)
-{
-    gradp[iCell].z() = 0.0;
-}
 
 U = HbyA - rAU * gradp;
 U.correctBoundaryConditions();
