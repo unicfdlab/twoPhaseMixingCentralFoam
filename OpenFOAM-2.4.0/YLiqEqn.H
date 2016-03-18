@@ -33,7 +33,6 @@
     fvScalarMatrix SuSp
     (
 	fvOptions(rho, YLiq)
-	//fvOptions(YLiq)
     );
     
     mulesWithDiffusionImplicitLimiter
@@ -84,13 +83,6 @@
     YLiq = min(YLiq, 1.0);
     YGas = 1.0 - YLiq;
     
-    liqDiffusionFlux = YLiqDiffusion.flux();
+    liqDiffusionFlux = -mDiffC * fvc::snGrad(YLiq) * mesh.magSf();
     gasDiffusionFlux = -liqDiffusionFlux;
-    
-    //implicitMassSource.internalField() = ((SuSp.diag() / mesh.V()) / rhoGas.internalField()) * psiGas.internalField() * YLiq.internalField();
-    //explicitMassSource.internalField() = (SuSp.diag() / mesh.V()) * YLiq.internalField();
-    //explicitMassSource = SuSp & YLiq;
-    
-    //Info << "max/min of implicit mass source: " << max(implicitMassSource).value() << "/" << min(implicitMassSource).value() << endl;
-    //Info << "max/min of explicit mass source: " << max(explicitMassSource).value() << "/" << min(explicitMassSource).value() << endl;
 }

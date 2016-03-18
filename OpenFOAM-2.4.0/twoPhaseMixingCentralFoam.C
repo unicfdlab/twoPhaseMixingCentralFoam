@@ -118,11 +118,6 @@ int main(int argc, char *argv[])
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-                //YbarLiq = YLiq * rhoGas / rhoLiq / (1.0 - YLiq + (rhoGas / rhoLiq) * YLiq);
-                //Info << "max/min YbarLiq " << max(YbarLiq).value() << "/" << min(YbarLiq).value() << endl;
-                //YbarLiq = min(max(YbarLiq,0.0),1.0);
-                //YbarGas = 1.0 - YbarLiq;
-                //psi = YbarLiq * psiLiq + YbarGas * psiGas  + (YbarGas * psiGas) * YLiq * (rhoLiq0 / rhoLiq) / (1.0 - YLiq + YLiq * rhoGas / rhoLiq);
                 #include "pEqn.H"
             }
 

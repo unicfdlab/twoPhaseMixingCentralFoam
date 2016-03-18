@@ -1,0 +1,4 @@
+twoPhaseMixingCentralDyMFoam.C
+../customMULES.C
+
+EXE = $(FOAM_USER_APPBIN)/twoPhaseMixingCentralDyMFoam

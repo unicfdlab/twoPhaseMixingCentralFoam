@@ -1,6 +1,6 @@
 {
     volScalarField& he = thermo.he();
-    volScalarField alphaEff (turbulence->alphaEff());
+    volScalarField alphahEff (turbulence->alphaEff());
     volScalarField Cp = thermo.Cp();
 
     upwind<scalar> UDsPos(mesh, phiPos);
@@ -46,35 +46,47 @@
     
     surfaceScalarField hCmptFlux
     (
-	"hCmptFlux",
-	fvc::flux
-	(
-	    liqDiffusionFlux,
-	    thermo.thermoLiq().he(),
-	    "div(rhoi*Uri,hi)"
-	)
-	+
-	fvc::flux
-	(
-	    gasDiffusionFlux,
-	    thermo.thermoGas().he(),
-	    "div(rhoi*Uri,hi)"
-	)
+        "hCmptFlux",
+        fvc::flux
+        (
+            liqDiffusionFlux,
+            thermo.thermoLiq().he(),
+            "div(rhoi*Uri,hi)"
+        )
+        +
+        fvc::flux
+        (
+            gasDiffusionFlux,
+            thermo.thermoGas().he(),
+            "div(rhoi*Uri,hi)"
+        )
+        +
+        fvc::flux
+        (
+            fvc::snGrad(YLiq) * mesh.magSf(),
+            thermo.thermoLiq().he() * alphahEff,
+            "div(alphaEff*hi,grad(Yi))"
+        )
+        +
+        fvc::flux
+        (
+            fvc::snGrad(YGas) * mesh.magSf(),
+            thermo.thermoGas().he() * alphahEff,
+            "div(alphaEff*hi,grad(Yi))"
+        )
     );
 
     fvScalarMatrix EEqn
     (
-	hConvection + fvc::div(hFluxCorr) + fvc::div(hCmptFlux)
-	+
-	EkChange
-	==
-	fvm::laplacian(alphaEff, he)
-	-
-	fvc::laplacian(alphaEff*T, thermo.Cp())
-	+
-	dpdt
-	+
-	rho*(g & U)
+        hConvection + fvc::div(hFluxCorr) + fvc::div(hCmptFlux)
+        +
+        EkChange
+        ==
+        fvm::laplacian(alphahEff, he)
+        +
+        dpdt
+        +
+        rho*(g & U)
     );
 
     EEqn.solve();
