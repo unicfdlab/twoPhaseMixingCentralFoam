@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "compressibleTwoPhaseMixture.H"
+#include "fvcSmooth.H"
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -99,7 +100,9 @@ Foam::compressibleTwoPhaseMixture::compressibleTwoPhaseMixture
         mesh,
         dimDensity
     )
-{}
+{
+    YGas_ = 1.0 - YLiq_;
+}
 
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //

@@ -64,12 +64,12 @@ Foam::fv::schnerrSauerEvaporationSource::schnerrSauerEvaporationSource
 )
 :
     option(name, modelType, dict, mesh),
-    AlphaLiquidName_(coeffs_.subDict("fieldNames").lookup("liquidVolumeFraction")),
-    YLiquidName_(coeffs_.subDict("fieldNames").lookup("liquidMassFraction")),
-    pName_(coeffs_.subDict("fieldNames").lookup("pressure")),
-    rhoName_(coeffs_.subDict("fieldNames").lookup("mixtureDensity")),
-    rhoLiqName_(coeffs_.subDict("fieldNames").lookup("liquidDensity")),
-    rhoGasName_(coeffs_.subDict("fieldNames").lookup("gasDensity")),
+    AlphaLiquidName_(coeffs_.subDict("names").lookup("liquidVolumeFraction")),
+    YLiquidName_(coeffs_.subDict("names").lookup("liquidMassFraction")),
+    pName_(coeffs_.subDict("names").lookup("pressure")),
+    rhoName_(coeffs_.subDict("names").lookup("mixtureDensity")),
+    rhoLiqName_(coeffs_.subDict("names").lookup("liquidDensity")),
+    rhoGasName_(coeffs_.subDict("names").lookup("gasDensity")),
     pSat_(coeffs_.lookup("pSat")),
     nMinus_(DataEntry<scalar>::New("nMinus", coeffs_)),
     nPlus_(DataEntry<scalar>::New("nPlus", coeffs_)),
@@ -104,7 +104,7 @@ Foam::fv::schnerrSauerEvaporationSource::schnerrSauerEvaporationSource
         dimensionedScalar("zeroMassSource", dimMass/dimLength/dimLength/dimLength/dimTime, 0)
     )
 {
-    fieldNames_.setSize(1, "YbarLiquid");
+    fieldNames_.setSize(1, YLiquidName_);
     applied_.setSize(1, false);
 
     forAll(mLiqDotMinus_.boundaryField(), iPatch)
@@ -131,7 +131,19 @@ Foam::dimensionedScalar
 Foam::fv::schnerrSauerEvaporationSource::alphaNuc(const dimensionedScalar& nNuc) const
 {
     dimensionedScalar Vnuc = nNuc * constant::mathematical::pi * pow3 (dNuc_) / 6;
-    return Vnuc / (1.0 + Vnuc);
+    
+    dimensionedScalar aNuc
+    (
+        "alphaNuc",
+        dimless,
+        max
+        (
+            SMALL,
+            (Vnuc / (1.0 + Vnuc)).value()
+        )
+    );
+    
+    return aNuc;
 }
 
 Foam::tmp<Foam::volScalarField>
@@ -195,6 +207,11 @@ void Foam::fv::schnerrSauerEvaporationSource::addSup
         nPlus_->value(mesh_.time().value())
     );
     
+    volScalarField rhoRatio
+    (
+        rhoGas * rhoLiq / rho
+    );
+    
     volScalarField rhoByRbMinus
     (
 	"rhoByRb",
@@ -211,13 +228,13 @@ void Foam::fv::schnerrSauerEvaporationSource::addSup
 
     volScalarField pCoeffMinus
     (
-        "pCoeff",
+        "pCoeffMinus",
         sqrt(max(pSat_ - p, p0) / rhoLiq)
     );
 
     volScalarField pCoeffPlus
     (
-        "pCoeff",
+        "pCoeffPlus",
         sqrt(max(p - pSat_, p0) / rhoLiq)
     );
     

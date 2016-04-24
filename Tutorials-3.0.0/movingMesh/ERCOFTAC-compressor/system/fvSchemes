@@ -35,8 +35,7 @@ divSchemes
 {
     default		none;
 
-    div(phiNeg,Y.Liq)	Gauss $defaultAdvScheme;
-    div(phiPos,Y.Liq)	Gauss $defaultAdvScheme;
+    div(phi,Y.Liq)	Gauss $defaultAdvScheme;
 
     div(phiNeg,Ek)      Gauss $defaultAdvScheme;
     div(phiPos,Ek)      Gauss $defaultAdvScheme;
@@ -64,7 +63,9 @@ divSchemes
     div(gasDiffusionFlux,U) Gauss linear;
     div(liqDiffusionFlux,U) Gauss linear;
     
-    div(volMeshPhi,p)   Gauss $defaultAdvScheme;
+    div(meshPhid,p)   Gauss $defaultAdvScheme;
+    div((kappa*meshPhiPos),K) Gauss $defaultAdvScheme;
+    div((meshPhiPos+((1-kappa)*meshPhiPos)),K) Gauss $defaultAdvScheme;
 }
 
 laplacianSchemes
@@ -83,16 +84,13 @@ interpolationSchemes
     reconstruct(p)		$defaultAdvScheme;
     reconstruct(YbarLiq)	$defaultAdvScheme;
 
-//    reconstruct(rho)		$defaultAdvScheme;
-//    reconstruct(U)		$defaultAdvScheme;
-//    reconstruct(psi)		$defaultAdvScheme;
+    reconstruct(rho)		$defaultAdvScheme;
+    reconstruct(U)		$defaultAdvScheme;
+    reconstruct(psi)		linear;
+    reconstruct(c)		$defaultAdvScheme;
 
     reconstruct(Dp)		$defaultAdvScheme;
-    reconstruct(rhoHat)		$defaultAdvScheme;
-
-    reconstruct(rho)		linear;
-    reconstruct(U)		linear;
-    reconstruct(psi)		linear;
+    reconstruct(rhoHat)		linear; 
 
     interpolate(muEff) linear;
     interpolate((muEff|Sc)) linear;

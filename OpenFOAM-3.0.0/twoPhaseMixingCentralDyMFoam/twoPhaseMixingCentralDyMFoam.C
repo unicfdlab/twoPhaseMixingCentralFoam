@@ -50,11 +50,11 @@ int main(int argc, char *argv[])
     #include "setRootCase.H"
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
+    pimpleControl pimple(mesh);
+    
     #include "createFields.H"
     #include "createMRF.H"
     #include "createFvOptions.H"
-
-    pimpleControl pimple(mesh);
     bool checkMeshCourantNo =
                 readBool(pimple.dict().lookup("checkMeshCourantNo"));
 
@@ -73,17 +73,17 @@ int main(int argc, char *argv[])
         "volMeshPhi",
         phiv_pos * 0.0
     );
-    
-    surfaceScalarField rel_phiv_pos
+
+    surfaceScalarField meshPhiPos
     (
-        "rel_phiv_pos",
-        phiv_pos - meshPhi
+        "meshPhiPos",
+        meshPhi * rho_pos * 0.0
     );
-    
-    surfaceScalarField rel_phiv_neg
+
+    surfaceScalarField meshPhiNeg
     (
-        "rel_phiv_neg",
-        phiv_neg - meshPhi
+        "meshPhiPos",
+        meshPhi * rho_neg * 0.0
     );
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -120,18 +120,12 @@ int main(int argc, char *argv[])
              if (mesh.changing())
              {
                  meshPhi = fvc::meshPhi(rho,U)();
-             
-                 if (runTime.timeIndex() > 1)
-                 {
-                     surfaceScalarField amNew = min(min(phiv_pos - meshPhi - cSf_pos, phiv_neg - meshPhi - cSf_neg), v_zero);
-                     phiNeg += kappa*(amNew - am)*(p_neg*psi_neg + rhoHat_neg);
-                     phiPos += (1.0 - kappa)*(amNew - am)*(p_neg*psi_neg + rhoHat_neg);
-                 }
-                 else
-                 {
-                     phiNeg -= meshPhi * fvc::interpolate(rho);
-                 }
-
+                 meshPhiPos = a_pos*rho_pos*meshPhi;
+                 meshPhiNeg = a_neg*rho_neg*meshPhi;
+        
+                 //make fluxes relative
+                 phiPos -= (meshPhiPos + (1.0 - kappa)*meshPhiNeg);
+                 phiNeg -= (meshPhiNeg*kappa);
                  phi = phiPos + phiNeg;
 
                  if (checkMeshCourantNo)
@@ -146,57 +140,59 @@ int main(int argc, char *argv[])
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
-	    #include "rhoEqn.H"
-	    
-	    scalarField allFacesLambda(mesh.nFaces(), 1.0);
-	    slicedSurfaceScalarField lambdaCoeffs
-	    (
-		IOobject
-		(
-		    "lambdaCoeffs",
-		    mesh.time().timeName(),
-		    mesh,
-		    IOobject::NO_READ,
-		    IOobject::NO_WRITE,
-		    false
-		),
-		mesh,
-		dimless,
-		allFacesLambda,
-		false   // Use slices for the couples
-	    );
-
+	    #include "MixtureRhoEqn.H"
+        
+            if (pimple.turbCorr())
+            {
+                turbulence->correct();
+            }
+        
+            scalarField allFacesLambda(mesh.nFaces(), 1.0);
+            slicedSurfaceScalarField lambdaCoeffs
+            (
+                IOobject
+                (
+                    "lambdaCoeffs",
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE,
+                    false
+                ),
+                mesh,
+                dimless,
+                allFacesLambda,
+                false   // Use slices for the couples
+            );
+            
             #include "YLiqEqn.H"
             #include "UEqn.H"
             #include "EEqn.H"
-
+            
             // --- Pressure corrector loop
             while (pimple.correct())
             {
                 #include "pEqnDyM.H"
             }
-
+            
+            //make fluxes absolute
+            phiPos += meshPhiPos;
+            phiNeg += meshPhiNeg;
+            phi = phiPos + phiNeg;
 	    #include "updateKappa.H"
 	    
-	    dpdt = fvc::ddt(p)  - fvc::div(meshPhi, p);
-	    EkChange = fvc::ddt(rho,K) + fvc::div(phiPos,K) + fvc::div(phiNeg,K);
-
-            if (pimple.turbCorr())
-            {
-                turbulence->correct();
-            }
+            dpdt = fvc::ddt(p) - fvc::div(meshPhi*a_pos*p_pos) - fvc::div(meshPhi*a_neg*p_neg);
+            EkChange = fvc::ddt(rho,K) + fvc::div(phiPos,K) + fvc::div(phiNeg,K)
+                -fvc::div((meshPhiPos + (1.0 - kappa)*meshPhiNeg),K) - fvc::div(kappa*meshPhiNeg,K);
         }
-
+        
         if(runTime.write())
         {
 	    c.write();
-	    psi.write();
 	    YbarLiq.write();
-	    YbarGas.write();
-	    volScalarField gamma ("gamma", thermo.Cp() / thermo.Cv());
-	    gamma.write();
         }
-
+        
+        
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
             << nl << endl;

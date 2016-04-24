@@ -3,8 +3,8 @@
         fvm::ddt(rho, U)
       + fvm::div(phiPos, U)
       + fvm::div(phiNeg, U)
-      + fvm::div(liqDiffusionFlux, U)
-      + fvm::div(gasDiffusionFlux, U)
+      //+ fvm::div(liqDiffusionFlux, U)
+      //+ fvm::div(gasDiffusionFlux, U)
       + turbulence->divDevRhoReff(U)
       + MRF.DDt(rho,U)
      ==
@@ -23,8 +23,7 @@
         fvOptions.correct(U);
         
         K = 0.5*magSqr(U);
+        
+        Info << "max(mag(U)): " << max(mag(U)).value() << endl;
     }
     
-    UEqn.relax();
-
-

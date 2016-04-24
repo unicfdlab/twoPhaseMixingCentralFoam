@@ -15,7 +15,7 @@ namespace Foam
     void mulesWithDiffusionImplicitLimiter
     (
 	const volScalarField& rho,
-	volScalarField& f,
+	volScalarField& Y,
 	const surfaceScalarField& phiPos,
 	const surfaceScalarField& phiNeg,
 	scalarField& lambdaCoeff,
@@ -24,7 +24,18 @@ namespace Foam
 	const surfaceScalarField& Dm,
 	const fvScalarMatrix& SuSp
     );
-    
+
+    void mulesWithDiffusionImplicitLimiter
+    (
+	const volScalarField& rho,
+	volScalarField& Y,
+	const surfaceScalarField& phi,
+	scalarField& lambdaCoeff,
+	surfaceScalarField& rhoPhifCorr, //total flux as input, correction flux as output
+	surfaceScalarField& diffFlux,
+	const surfaceScalarField& Dm,
+	const fvScalarMatrix& SuSp
+    );
 };
 
 #endif

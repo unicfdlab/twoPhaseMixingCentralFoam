@@ -1,0 +1,100 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.4.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+asymmSolver PBiCG;
+
+solvers
+{
+    "Y.*"
+    {
+        solver                  $asymmSolver;
+        tolerance               1e-8;
+        relTol                  0.0;
+        preconditioner          DILU;
+        smoother                DILUGaussSeidel;
+        
+        nLimiterIter		3;
+    }
+
+    "(rho|rhoFinal)"
+    {
+        solver          diagonal;
+    }
+
+    "(U|k|omega)"
+    {
+        solver                  $asymmSolver;
+        tolerance               1e-8;
+        relTol                  0.0;
+        preconditioner          DILU;
+        smoother                DILUGaussSeidel;
+    }
+
+    "(U|k|omega)Final"
+    {
+        $U;
+        relTol          0;
+    }
+
+    "(h|hFinal)"
+    {
+        solver              $asymmSolver;
+        preconditioner  DILU;
+        tolerance        1e-8;
+        relTol           0;
+        smoother                DILUGaussSeidel;
+    };
+
+    p
+    {
+        solver               $asymmSolver;
+        preconditioner  DILU;
+        tolerance        1e-8;
+        relTol           1e-2;
+        smoother                DILUGaussSeidel;
+    }
+
+    pFinal
+    {
+	$p;
+	relTol 0;
+    }
+}
+
+PIMPLE
+{
+    momentumPredictor       false;
+    turbOnFinalIterOnly     true;
+
+    transonic               on;
+
+    nOuterCorrectors        1;
+    nCorrectors             3;
+
+
+    //Hybrid scheme tune parameters
+    nNonOrthogonalCorrectors 1;
+    nonOrthogonalityThreshold 20.0;
+    skewnessThreshold 2.0;
+    
+    
+    pMin pMin [1 -1 -2 0 0 0 0] 1000.0;
+    Cid 1.0;
+}
+
+
+// ************************************************************************* //

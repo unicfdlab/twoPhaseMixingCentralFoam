@@ -49,11 +49,11 @@ int main(int argc, char *argv[])
     #include "setRootCase.H"
     #include "createTime.H"
     #include "createMesh.H"
+    pimpleControl pimple(mesh);
+    
     #include "createFields.H"
     #include "createMRF.H"
     #include "createFvOptions.H"
-
-    pimpleControl pimple(mesh);
     #include "createTimeControls.H"
     #include "readTimeControls.H"
 
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     while (runTime.run())
     {
         #include "readTimeControls.H"
-	#include "acousticCourantNo.H"
+        #include "acousticCourantNo.H"
         #include "centralCompressibleCourantNo.H"
         #include "setDeltaT.H"
 
@@ -93,25 +93,25 @@ int main(int argc, char *argv[])
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
-	    #include "rhoEqn.H"
-	    
-	    scalarField allFacesLambda(mesh.nFaces(), 1.0);
-	    slicedSurfaceScalarField lambdaCoeffs
-	    (
-		IOobject
-		(
-		    "lambdaCoeffs",
-		    mesh.time().timeName(),
-		    mesh,
-		    IOobject::NO_READ,
-		    IOobject::NO_WRITE,
-		    false
-		),
-		mesh,
-		dimless,
-		allFacesLambda,
-		false   // Use slices for the couples
-	    );
+            #include "MixtureRhoEqn.H"
+            
+            scalarField allFacesLambda(mesh.nFaces(), 1.0);
+            slicedSurfaceScalarField lambdaCoeffs
+            (
+                IOobject
+                (
+                    "lambdaCoeffs",
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE,
+                    false
+                ),
+                mesh,
+                dimless,
+                allFacesLambda,
+                false   // Use slices for the couples
+            );
 
             #include "YLiqEqn.H"
             #include "UEqn.H"
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
             {
                 #include "pEqn.H"
             }
-
+            
 	    #include "updateKappa.H"
 	    
 	    dpdt = fvc::ddt(p);
@@ -136,12 +136,8 @@ int main(int argc, char *argv[])
 
         if(runTime.write())
         {
-	    c.write();
-	    psi.write();
-	    YbarLiq.write();
-	    YbarGas.write();
-	    volScalarField gamma ("gamma", thermo.Cp() / thermo.Cv());
-	    gamma.write();
+            c.write();
+            YbarLiq.write();
         }
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

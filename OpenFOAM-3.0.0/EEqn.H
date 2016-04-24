@@ -5,14 +5,17 @@
 
     upwind<scalar> UDsPos(mesh, phiPos);
     upwind<scalar> UDsNeg(mesh, phiNeg);
+    upwind<scalar> UDs(mesh, phi);
 
     fvScalarMatrix hConvection
     (
-	fvm::ddt(rho,he)
-	+
-	fv::gaussConvectionScheme<scalar>(mesh, phiPos, UDsPos).fvmDiv(phiPos, he)
-	+
-	fv::gaussConvectionScheme<scalar>(mesh, phiNeg, UDsNeg).fvmDiv(phiNeg, he)
+        fvm::ddt(rho,he)
+        //+
+        //fv::gaussConvectionScheme<scalar>(mesh, phi, UDs).fvmDiv(phi, he)
+        +
+        fv::gaussConvectionScheme<scalar>(mesh, phiPos, UDsPos).fvmDiv(phiPos, he)
+        +
+        fv::gaussConvectionScheme<scalar>(mesh, phiNeg, UDsNeg).fvmDiv(phiNeg, he)
     );
 
     /*
@@ -23,9 +26,9 @@
     
     surfaceScalarField hFluxCorr
     (
-	lambdaCoeffs
-	*
-	(
+        lambdaCoeffs
+        *
+        (
 	    fvc::flux
 	    (
 		phiPos,
@@ -41,7 +44,7 @@
 	    )
 	    -
 	    hConvection.flux()
-	)
+        )
     );
     
     surfaceScalarField hCmptFlux
@@ -75,10 +78,10 @@
             "div(alphaEff*hi,grad(Yi))"
         )
     );
-
+    
     fvScalarMatrix EEqn
     (
-        hConvection + fvc::div(hFluxCorr) + fvc::div(hCmptFlux)
+        hConvection + fvc::div(hFluxCorr) + fvc::div(hCmptFlux) 
         +
         EkChange
         ==
@@ -99,5 +102,13 @@
     
     thermo.correct();
     
-    T.correctBoundaryConditions();
+    //surfaceScalarField eFlux = EEqn.flux() + hCmptFlux - hConvection.flux() - hFluxCorr;
+    //
+    //Info << "Max/min of eFlux: " << max(eFlux).value() << "/" << min(eFlux).value() << endl;
+    //he.write();
+    //alphahEff.rename("alphahEff");
+    //alphahEff.write();
+    
+    //T.correctBoundaryConditions();
+    
 }

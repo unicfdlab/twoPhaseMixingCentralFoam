@@ -67,7 +67,58 @@ void Foam::mulesWithDiffusionImplicitLimiter
     );
 }
 
+void Foam::mulesWithDiffusionImplicitLimiter
+(
+    const volScalarField& rho,
+    volScalarField& Y,
+    const surfaceScalarField& phi,
+    scalarField& lambdaFace,
+    surfaceScalarField& rhoPhif,
+    surfaceScalarField& diffFlux,
+    const surfaceScalarField& Dmi,
+    const fvScalarMatrix& SuSp
+)
+{
+    const fvMesh& mesh = rho.mesh();
+    const dictionary& MULEScontrols = mesh.solverDict("Yi");
 
+    label nLimiterIter
+    (
+	readLabel(MULEScontrols.lookup("nLimiterIter"))
+    );
+    
+    upwind<scalar> UDs(mesh, phi);
+    
+    fvScalarMatrix YConvection
+    (
+	fv::gaussConvectionScheme<scalar>(mesh, phi, UDs).fvmDiv(phi, Y)
+    );
+    
+    surfaceScalarField rhoPhifBD = YConvection.flux();
+
+    surfaceScalarField& rhoPhifCorr = rhoPhif;
+    rhoPhifCorr -= rhoPhifBD;
+
+    volScalarField Su
+    (
+	"Su",
+	SuSp & Y
+    );
+
+    MULES::limiter
+    (
+	lambdaFace,
+	1.0/mesh.time().deltaTValue(),
+	rho,
+	Y,
+	rhoPhifBD,
+	rhoPhifCorr,
+	zeroField(),
+	Su,
+	1.0, //psiMax,
+	0.0  //psiMin,
+    );
+}
 
 //
 //END-OF-FILE

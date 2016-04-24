@@ -66,6 +66,9 @@ else if ( CourantType == "faceCourant" )
 		+
 		rhoHat_pos*a_pos + rhoHat_neg*a_neg
 	    )
+            //phiPos / ((p_pos * psi_pos + rhoHat_pos)*a_pos)
+            //+
+            //phiNeg / ((p_neg * psi_neg + rhoHat_neg)*a_neg)
 	);
 	
 	surfaceScalarField SfUfbyDelta =

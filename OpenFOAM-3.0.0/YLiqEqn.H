@@ -1,23 +1,15 @@
 {
-    word YiPosScheme ("div(phiPos," + YLiq.name() +")");
-    word YiNegScheme ("div(phiNeg," + YLiq.name() +")");
-
+    word YiScheme ("div(phi," + YLiq.name() +")");
+    
     surfaceScalarField rhoPhiYCorr
     (
-	"rhoPhiYLiqCorr",
-	fvc::flux
-	(
-	    phiPos,
-	    YLiq,
-	    YiPosScheme
-	)
-	+
-	fvc::flux
-	(
-	    phiNeg,
-	    YLiq,
-	    YiNegScheme
-	)
+        "rhoPhiYLiqCorr",
+        fvc::flux
+        (
+            phi,
+            YLiq,
+            YiScheme
+        )
     );
     
     surfaceScalarField mDiffC
@@ -32,50 +24,77 @@
     
     fvScalarMatrix SuSp
     (
-	fvOptions(rho, YLiq)
+	fvOptions(rho,YLiq)
     );
     
     mulesWithDiffusionImplicitLimiter
     (
 	rho,
 	YLiq,
-	phiPos,
-	phiNeg,
+	phi,
 	allFacesLambda,
 	rhoPhiYCorr,
 	liqDiffusionFlux,
 	mDiffC,
 	SuSp
     );
-    
-    fvScalarMatrix YLiqDiffusion
-    (
-	- fvm::laplacian(mDiffC, YLiq)
-    );
-    
-    upwind<scalar> UDsPos(mesh, phiPos);
-    upwind<scalar> UDsNeg(mesh, phiNeg);
-    
-    fvScalarMatrix YLiqConvection
-    (
-	fvm::ddt(rho,YLiq)
-	+
-	fv::gaussConvectionScheme<scalar>(mesh, phiPos, UDsPos).fvmDiv(phiPos, YLiq)
-	+
-	fv::gaussConvectionScheme<scalar>(mesh, phiNeg, UDsNeg).fvmDiv(phiNeg, YLiq)
-	==
-	SuSp
-    );
-    
+
+    upwind<scalar> UDs(mesh, phi);
+
     fvScalarMatrix YLiqEqn
     (
-	YLiqConvection + YLiqDiffusion +  fvc::div(lambdaCoeffs * rhoPhiYCorr)
+        fvm::ddt(rho,YLiq)
+        +
+        fv::gaussConvectionScheme<scalar>(mesh, phi, UDs).fvmDiv(phi, YLiq)
+        +
+        fvc::div(lambdaCoeffs * rhoPhiYCorr)
+        ==
+        SuSp
     );
     
     YLiqEqn.relax();
     
     YLiqEqn.solve(mesh.solver(YLiq.name()));
     
+    surfaceScalarField centralSurfaceFlux
+    (
+        "centralSurfaceFlux",
+        fvc::flux
+        (
+            phiPos,
+            YLiq,
+            YiScheme
+        )
+        +
+        fvc::flux
+        (
+            phiNeg,
+            YLiq,
+            YiScheme
+        )
+    );
+
+    upwind<scalar> UDsPos(mesh, phiPos);
+    upwind<scalar> UDsNeg(mesh, phiNeg);
+    
+    surfaceScalarField centralSurfaceFluxBD
+    (
+        fv::gaussConvectionScheme<scalar>(mesh, phiPos, UDsPos).flux(phiPos, YLiq)
+        +
+        fv::gaussConvectionScheme<scalar>(mesh, phiNeg, UDsNeg).flux(phiNeg, YLiq)
+    );
+    
+    //account for diffusion in enthalpy equation
+    centralSurfaceFlux =
+        centralSurfaceFluxBD + lambdaCoeffs*(centralSurfaceFlux - centralSurfaceFluxBD);
+
+    liqDiffusionFlux = -
+        (
+            centralSurfaceFlux - (YLiqEqn.flux() + lambdaCoeffs * rhoPhiYCorr)
+        );
+    
+    gasDiffusionFlux = -liqDiffusionFlux;
+
     Info<< "Mass fraction min/max = " << min(YLiq).value() << "/"
         << max(YLiq).value() << endl;
     
@@ -83,6 +102,4 @@
     YLiq = min(YLiq, 1.0);
     YGas = 1.0 - YLiq;
     
-    liqDiffusionFlux = -mDiffC * fvc::snGrad(YLiq) * mesh.magSf();
-    gasDiffusionFlux = -liqDiffusionFlux;
 }

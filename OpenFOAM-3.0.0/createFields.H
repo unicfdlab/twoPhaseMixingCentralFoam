@@ -172,29 +172,20 @@
 	rho - psi*p
     );
     
-    surfaceScalarField rhoHat_pos
-    (
-	"rhoHat_pos",
-	fvc::interpolate(rhoHat, pos, "reconstruct(rhoHat)")
-    );
-    
-    surfaceScalarField rhoHat_neg
-    (
-	"rhoHat_neg",
-	fvc::interpolate(rhoHat, neg, "reconstruct(rhoHat)")
-    );
-    
     Info<< "Declare and initialise the cumulative continuity error\n" << endl;
     scalar cumulativeContErr = 0;
     
-    surfaceScalarField liqDiffusionFlux
+    dimensionedScalar pMin
     (
-	"liqDiffusionFlux",
-	fvc::interpolate(turbulence->muEff()) * ( (fvc::snGrad(YLiq)) * mesh.magSf()) * 0.0
+        pimple.dict().lookup("pMin")
     );
     
-    surfaceScalarField gasDiffusionFlux
+    scalar Cid
     (
-	"gasDiffusionFlux",
-	liqDiffusionFlux
+        1.0 
+        - 
+        min(max(readScalar(pimple.dict().lookup("Cid")),0.0),1.0)
     );
+    
+
+

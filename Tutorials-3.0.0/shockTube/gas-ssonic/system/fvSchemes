@@ -33,8 +33,7 @@ divSchemes
 {
     default		none;
 
-    div(phiNeg,Y.Liq)	Gauss $defaultAdvScheme;
-    div(phiPos,Y.Liq)	Gauss $defaultAdvScheme;
+    div(phi,Y.Liq)	Gauss $defaultAdvScheme;
 
     div(phiNeg,K)	Gauss $defaultAdvScheme;
     div(phiPos,K)	Gauss $defaultAdvScheme;
@@ -75,12 +74,10 @@ interpolationSchemes
     
     reconstruct(p)		$defaultAdvScheme;
     reconstruct(YbarLiq)	$defaultAdvScheme;
-    
-//    reconstruct(U)		$diffusiveAdvScheme;
-//    reconstruct(psi)		$diffusiveAdvScheme;
 
     reconstruct(U)		$defaultAdvScheme;
     reconstruct(psi)		$defaultAdvScheme;
+    reconstruct(c)		$defaultAdvScheme;
 
     reconstruct(Dp)		$defaultAdvScheme;
     

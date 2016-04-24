@@ -212,6 +212,9 @@ void Foam::compressibleTwoPhaseMixtureThermo::correct()
     
     mu_ = YbarLiq()*thermoLiq_->mu() + YbarGas()*thermoGas_->mu();
     alpha_ = YbarLiq()*thermoLiq_->alpha() + YbarGas()*thermoGas_->alpha();
+
+    //mu_ = YLiq()*thermoLiq_->mu() + YGas()*thermoGas_->mu();
+    //alpha_ = YLiq()*thermoLiq_->alpha() + YGas()*thermoGas_->alpha();
 }
 
 
@@ -335,7 +338,7 @@ Foam::tmp<Foam::scalarField> Foam::compressibleTwoPhaseMixtureThermo::Cv
 
 Foam::tmp<Foam::volScalarField> Foam::compressibleTwoPhaseMixtureThermo::gamma() const
 {
-    return YbarLiq()*thermoLiq_->gamma() + YbarGas()*thermoGas_->gamma();
+    return YLiq()*thermoLiq_->gamma() + YGas()*thermoGas_->gamma();
 }
 
 
@@ -347,8 +350,8 @@ Foam::tmp<Foam::scalarField> Foam::compressibleTwoPhaseMixtureThermo::gamma
 ) const
 {
     return
-        YbarLiq().boundaryField()[patchi]*thermoLiq_->gamma(p, T, patchi)
-      + YbarGas().boundaryField()[patchi]*thermoGas_->gamma(p, T, patchi);
+        YLiq().boundaryField()[patchi]*thermoLiq_->gamma(p, T, patchi)
+      + YGas().boundaryField()[patchi]*thermoGas_->gamma(p, T, patchi);
 }
 
 
@@ -374,8 +377,8 @@ Foam::tmp<Foam::scalarField> Foam::compressibleTwoPhaseMixtureThermo::Cpv
 Foam::tmp<Foam::volScalarField> Foam::compressibleTwoPhaseMixtureThermo::CpByCpv() const
 {
     return
-        YbarLiq()*thermoLiq_->CpByCpv()
-      + YbarGas()*thermoGas_->CpByCpv();
+        YLiq()*thermoLiq_->CpByCpv()
+      + YGas()*thermoGas_->CpByCpv();
 }
 
 
@@ -387,14 +390,14 @@ Foam::tmp<Foam::scalarField> Foam::compressibleTwoPhaseMixtureThermo::CpByCpv
 ) const
 {
     return
-        YbarLiq().boundaryField()[patchi]*thermoLiq_->CpByCpv(p, T, patchi)
-      + YbarGas().boundaryField()[patchi]*thermoGas_->CpByCpv(p, T, patchi);
+        YLiq().boundaryField()[patchi]*thermoLiq_->CpByCpv(p, T, patchi)
+      + YGas().boundaryField()[patchi]*thermoGas_->CpByCpv(p, T, patchi);
 }
 
 
 Foam::tmp<Foam::volScalarField> Foam::compressibleTwoPhaseMixtureThermo::kappa() const
 {
-    return YbarLiq()*thermoLiq_->kappa() + YbarGas()*thermoGas_->kappa();
+    return YLiq()*thermoLiq_->kappa() + YGas()*thermoGas_->kappa();
 }
 
 
@@ -404,8 +407,8 @@ Foam::tmp<Foam::scalarField> Foam::compressibleTwoPhaseMixtureThermo::kappa
 ) const
 {
     return
-        YbarLiq().boundaryField()[patchi]*thermoLiq_->kappa(patchi)
-      + YbarGas().boundaryField()[patchi]*thermoGas_->kappa(patchi);
+        YLiq().boundaryField()[patchi]*thermoLiq_->kappa(patchi)
+      + YGas().boundaryField()[patchi]*thermoGas_->kappa(patchi);
 }
 
 
@@ -415,8 +418,8 @@ Foam::tmp<Foam::volScalarField> Foam::compressibleTwoPhaseMixtureThermo::kappaEf
 ) const
 {
     return
-        YbarLiq()*thermoLiq_->kappaEff(alphat)
-      + YbarGas()*thermoGas_->kappaEff(alphat);
+        YLiq()*thermoLiq_->kappaEff(alphat)
+      + YGas()*thermoGas_->kappaEff(alphat);
 }
 
 
@@ -427,8 +430,8 @@ Foam::tmp<Foam::scalarField> Foam::compressibleTwoPhaseMixtureThermo::kappaEff
 ) const
 {
     return
-        YbarLiq().boundaryField()[patchi]*thermoLiq_->kappaEff(alphat, patchi)
-      + YbarGas().boundaryField()[patchi]*thermoGas_->kappaEff(alphat, patchi)
+        YLiq().boundaryField()[patchi]*thermoLiq_->kappaEff(alphat, patchi)
+      + YGas().boundaryField()[patchi]*thermoGas_->kappaEff(alphat, patchi)
     ;
 }
 
@@ -439,8 +442,8 @@ Foam::tmp<Foam::volScalarField> Foam::compressibleTwoPhaseMixtureThermo::alphaEf
 ) const
 {
     return
-        YbarLiq()*thermoLiq_->alphaEff(alphat)
-      + YbarGas()*thermoGas_->alphaEff(alphat);
+        YLiq()*thermoLiq_->alphaEff(alphat)
+      + YGas()*thermoGas_->alphaEff(alphat);
 }
 
 
@@ -451,8 +454,8 @@ Foam::tmp<Foam::scalarField> Foam::compressibleTwoPhaseMixtureThermo::alphaEff
 ) const
 {
     return
-        YbarLiq().boundaryField()[patchi]*thermoLiq_->alphaEff(alphat, patchi)
-      + YbarGas().boundaryField()[patchi]*thermoGas_->alphaEff(alphat, patchi)
+        YLiq().boundaryField()[patchi]*thermoLiq_->alphaEff(alphat, patchi)
+      + YGas().boundaryField()[patchi]*thermoGas_->alphaEff(alphat, patchi)
     ;
 }
 

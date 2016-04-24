@@ -1,0 +1,15 @@
+    slip
+    {
+        type            slip;
+    }
+    
+    defaultFaces
+    {
+        type            slip;
+    }
+    
+    axis
+    {
+        type            slip;
+    }
+

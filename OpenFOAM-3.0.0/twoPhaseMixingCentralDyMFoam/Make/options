@@ -1,4 +1,6 @@
 EXE_INC = \
+    -I. \
+    -I../ \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/finiteVolume/cfdTools \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
@@ -11,8 +13,8 @@ EXE_INC = \
     -I$(LIB_SRC)/dynamicFvMesh/lnInclude \
     -I$(LIB_SRC)/dynamicMesh/lnInclude  \
     -I$(LIB_SRC)/fvOptions/lnInclude \
-    -I../compressibleTwoPhaseThermo/lnInclude \
-    -I../
+    -I../compressibleTwoPhaseThermo/lnInclude 
+
 
 EXE_LIBS = \
     -L$(FOAM_USER_LIBBIN) \

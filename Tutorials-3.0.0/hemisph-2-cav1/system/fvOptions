@@ -1,0 +1,80 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvOptions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+evaporationSource1
+{
+    type            schnerrSauerEvaporationSource;
+    active          false;
+    selectionMode   all;
+
+    schnerrSauerEvaporationSourceCoeffs
+    {
+	names
+	{
+	    liquidMassFraction		Y.Liq;
+	    liquidVolumeFraction	Ybar.Liq;
+	    pressure			p;
+	    mixtureDensity		rho;
+	    liquidDensity		rho.Liq;
+	    gasDensity			rho.Gas;
+	}
+	
+	/* Vapor generation */
+	nMinus
+	table
+	(
+	    (0.000 1)
+	    (0.111 1)
+	    (0.112 1e+7)
+	    (0.113 1e+7)
+	    (0.114 1e+8)
+	    (0.116 1e+8)
+	    (0.117 1e+9)
+	    (0.119 1e+9)
+	    (0.120 1e+10)
+	    (0.121 1e+10)
+	    (0.122 1e+11)
+	);
+	
+	/* Vapor destruction */
+	nPlus
+	table
+	(
+	    (0.000 1)
+	    (0.111 1)
+	    (0.112 1e+7)
+	    (0.113 1e+7)
+	    (0.114 1e+8)
+	    (0.116 1e+8)
+	    (0.117 1e+9)
+	    (0.119 1e+9)
+	    (0.120 1e+10)
+	    (0.121 1e+10)
+	    (0.122 1e+11)
+	);
+	
+	dNuc            dNuc   [0 1 0 0 0 0 0]      2.0e-06;
+	Cc              Cc     [0 0 0 0 0 0 0]      1; //1;
+	Cv              Cv     [0 0 0 0 0 0 0]      1; //1;
+	taur            taur   [0 0 1 0 0 0 0]      5.0e-5; //5.0e-5;
+	
+	pSat		pSat [1 -1 -2 0 0 0 0] 107000;
+    }
+}
+
+
+// ************************************************************************* //

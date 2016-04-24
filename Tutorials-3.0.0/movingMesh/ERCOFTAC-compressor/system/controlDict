@@ -58,9 +58,6 @@ CourantType	faceCourant;
 
 functions
 (
-
-
-
 );
 
 libs ("libOpenFOAM.so" "libcompressibleTools.so");
