@@ -103,7 +103,6 @@ PIMPLE
     nonOrthogonalityThreshold 45.0;
     skewnessThreshold 2.0;
     
-    pMin pMin [1 -1 -2 0 0 0 0] 100.0;
     Cid 0.0;
 }
 
