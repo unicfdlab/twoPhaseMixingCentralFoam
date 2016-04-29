@@ -8,4 +8,8 @@ cd twoPhaseMixingCentralDyMFoam; wclean; cd ../
 
 wclean
 
+rm -rf $FOAM_USER_LIBBIN/libcompressibleTwoPhaseThermo.so
+rm -rf $FOAM_USER_APPBIN/twoPhaseMixingCentralFoam
+rm -rf $FOAM_USER_APPBIN/twoPhaseMixingCentralDyMFoam
+
 # ----------------------------------------------------------------- end-of-file

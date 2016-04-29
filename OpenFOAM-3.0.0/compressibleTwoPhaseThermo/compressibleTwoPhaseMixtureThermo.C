@@ -68,6 +68,7 @@ Foam::compressibleTwoPhaseMixtureThermo::compressibleTwoPhaseMixtureThermo
 :
     rhoThermo(mesh, word::null),
     compressibleTwoPhaseMixture(mesh, *this),
+    pMin_(this->lookup("pMin")),
     thermoLiq_(NULL),
     thermoGas_(NULL),
     
@@ -87,6 +88,9 @@ Foam::compressibleTwoPhaseMixtureThermo::compressibleTwoPhaseMixtureThermo
         this->heBoundaryBaseTypes()
     )
 {
+    //limit pressure before proceeding
+    p_ = max(p_, pMin_);
+
     thermoLiq_ .reset
     (
 	new simplePhasePsiThermo(mesh, this->subDict(liqPhaseName()))
@@ -478,6 +482,11 @@ Foam::tmp<Foam::volScalarField> Foam::compressibleTwoPhaseMixtureThermo::rho() c
 Foam::tmp<Foam::scalarField> Foam::compressibleTwoPhaseMixtureThermo::rho(const label patchi) const
 {
     return rhoEff_.boundaryField()[patchi];
+}
+
+const Foam::dimensionedScalar& Foam::compressibleTwoPhaseMixtureThermo::pMin() const
+{
+    return pMin_;
 }
 
 // ************************************************************************* //

@@ -55,6 +55,9 @@ class compressibleTwoPhaseMixtureThermo
     public compressibleTwoPhaseMixture
 {
     // Private data
+    
+        //-
+        dimensionedScalar pMin_;
 
         //- Thermo-package of each phase
         autoPtr<simplePhasePsiThermo> thermoLiq_;
@@ -290,6 +293,9 @@ public:
 	    
 	    //-
 	    virtual tmp<scalarField> rho(const label patchi) const;
+	    
+	    //-
+	    const dimensionedScalar& pMin() const;
 };
 
 

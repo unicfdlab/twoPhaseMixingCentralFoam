@@ -175,10 +175,7 @@
     Info<< "Declare and initialise the cumulative continuity error\n" << endl;
     scalar cumulativeContErr = 0;
     
-    dimensionedScalar pMin
-    (
-        pimple.dict().lookup("pMin")
-    );
+    const dimensionedScalar& pMin = thermo.pMin();
     
     scalar Cid
     (
