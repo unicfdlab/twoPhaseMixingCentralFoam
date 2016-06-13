@@ -1,0 +1,116 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.4.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+asymmSolver BiCGStab;
+
+solvers
+{
+    "Y.*"
+    {
+        solver                  $asymmSolver;
+        tolerance               1e-8;
+        relTol                  0.0;
+        preconditioner          DILU;
+        smoother                DILUGaussSeidel;
+        
+        nLimiterIter		3;
+    }
+
+    "(rho|rhoFinal)"
+    {
+        solver          diagonal;
+    }
+
+    "(U|k|omega)"
+    {
+        solver                  $asymmSolver;
+        tolerance               1e-8;
+        relTol                  0.0;
+        preconditioner          DILU;
+        smoother                DILUGaussSeidel;
+    }
+
+    "(U|k|omega)Final"
+    {
+        $U;
+        relTol          0;
+    }
+
+    "(h|hFinal)"
+    {
+        solver              $asymmSolver;
+        preconditioner  DILU;
+        tolerance        1e-8;
+        relTol           0;
+        smoother                DILUGaussSeidel;
+    };
+
+    p
+    {
+        solver               $asymmSolver;
+        preconditioner  DILU;
+        tolerance        1e-8;
+        relTol           0;
+        smoother                DILUGaussSeidel;
+    }
+
+    pFinal
+    {
+	$p;
+    }
+
+    "(cellMotionUx|cellDisplacement)"
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance        1e-8;
+        relTol           0;
+    }
+}
+
+PIMPLE
+{
+    momentumPredictor       false;
+    turbOnFinalIterOnly     true;
+
+    nOuterCorrectors        1;
+    nCorrectors             3;
+    checkMeshCourantNo      true;
+
+    nNonOrthogonalCorrectors 0;
+    
+    nonOrthogonalityThreshold 30.0;
+    skewnessThreshold 2.0;
+    
+    Cid     0.0;
+    
+    kappaFunction
+    {
+        type    acceleratedSonicCourantInverse;
+        
+        acceleratedSonicCourantInverseCoeffs
+        {
+            power   4.0;
+            writeMaxMin false;
+            resetCoupledBoundaries false;
+            reinterpolateToFaces false;
+        }
+    }
+}
+
+
+// ************************************************************************* //

@@ -1,0 +1,5 @@
+simplePhasePsiThermo.C
+compressibleTwoPhaseMixture.C
+compressibleTwoPhaseMixtureThermo.C
+
+LIB = $(FOAM_USER_LIBBIN)/libcompressibleTwoPhaseThermo

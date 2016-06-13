@@ -1,0 +1,9 @@
+twoPhaseMixingCentralDyMFoam.C
+../customMULES.C
+../kappaFunctions/kappaFunction/kappaFunction.C
+../kappaFunctions/derived/standardMachToAcCourantRatio/standardMachToAcCourantRatioKappaFunction.C
+../kappaFunctions/derived/sonicCourantInverse/sonicCourantInverseKappaFunction.C
+../kappaFunctions/derived/acceleratedSonicCourantInverse/acceleratedSonicCourantInverseKappaFunction.C
+
+
+EXE = $(FOAM_USER_APPBIN)/twoPhaseMixingCentralDyMFoam

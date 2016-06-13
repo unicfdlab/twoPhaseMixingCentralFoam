@@ -1,0 +1,11 @@
+kappaFunctions/kappaFunction/kappaFunction.C
+kappaFunctions/derived/standardMachToAcCourantRatio/standardMachToAcCourantRatioKappaFunction.C
+kappaFunctions/derived/sonicCourantInverse/sonicCourantInverseKappaFunction.C
+kappaFunctions/derived/acceleratedSonicCourantInverse/acceleratedSonicCourantInverseKappaFunction.C
+customMULES.C
+twoPhaseMixingCentralFoam.C
+fvOptions/schnerrSauerEvaporationSource/schnerrSauerEvaporationSource.C
+
+
+EXE = $(FOAM_USER_APPBIN)/twoPhaseMixingCentralFoam
+

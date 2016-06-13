@@ -1,0 +1,30 @@
+probes
+{
+	// Where to load it from
+	functionObjectLibs ( "libsampling.so" );
+
+	type            probes;
+
+	// Name of the directory for probe data
+	name            probes;
+
+	// Write at same frequency as fields
+	outputControl   timeStep;
+	outputInterval  1;
+
+	// Fields to be probed
+	fields
+	(
+	    p U
+	);
+
+	probeLocations
+	(
+            ( 0.53894 0 0 )
+            ( 1.07788 0 0 )
+            ( 2.15576 0 0 )
+            ( 4.31152 0 0 )
+	    ( 6.46728 0 0 )
+            ( 8.62304 0 0 )
+        );
+}
