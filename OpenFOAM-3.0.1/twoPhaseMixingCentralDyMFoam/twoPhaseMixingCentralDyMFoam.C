@@ -164,21 +164,24 @@ int main(int argc, char *argv[])
                 allFacesLambda,
                 false   // Use slices for the couples
             );
+
+            lambdaCoeffs.internalField() = 1.0;
             
             #include "YLiqEqn.H"
-            #include "UEqn.H"
             #include "EEqn.H"
-            
+
+            #include "UEqn.H"
+
             // --- Pressure corrector loop
             while (pimple.correct())
             {
                 #include "pEqnDyM.H"
+                K = 0.5*magSqr(U);
+                dpdt = (p - p.oldTime()) / runTime.deltaT();
+                EkChange = fvc::ddt(rho,K) + fvc::div(phi,K)
+                    - fvc::div( ((-turbulence->devRhoReff()) & U) );
             }
             
-            K = 0.5*magSqr(U);
-            dpdt = (p - p.oldTime()) / runTime.deltaT();
-            EkChange = fvc::ddt(rho,K) + fvc::div(phi,K)
-                - fvc::div( ((-turbulence->devRhoReff()) & U) );
             //EkChange = fvc::ddt(rho,K) + fvc::div(phiPos,K) + fvc::div(phiNeg,K)
             //  - fvc::div( ((-turbulence->devRhoReff()) & U) );
             
