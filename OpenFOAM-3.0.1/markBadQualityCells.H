@@ -19,12 +19,6 @@
         )
     );
 
-//    volScalarField cellMarker
-//    (
-//        "cellMarker",
-//        YLiq * 0.0
-//    );
-
     cellQuality cq (mesh);
     
     scalarField cellNonOrtho (cq.nonOrthogonality());
@@ -38,12 +32,6 @@
         {
             badQualityCells.append(iCell);
             
-//            cellMarker[iCell] = 1.0;
         }
     }
-    
-//    if (runTime.outputTime())
-//    {
-//        cellMarker.write();
-//    }
 }
